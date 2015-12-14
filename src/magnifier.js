@@ -1,0 +1,414 @@
+(function($) {
+    'use strict';
+
+    if (!$.version || $.version.major < 2) {
+        throw new Error('This version of MpenSeadragonmagnifier requires OpenSeadragon version 2.0.0+');
+    }
+
+    $.Viewer.prototype.magnifier = function(options) {
+        if (!this.magnifierInstance || options) {
+            options = options || {};
+            options.viewer = this;
+            this.magnifierInstance = new $.Magnifier(options);
+        }
+        return this.magnifierInstance;
+    };
+
+    // var viewerAddTiledImage = $.Viewer.prototype.addTiledImage;
+    // $.Viewer.prototype.addTiledImage = function(options) {
+    //     var self = this;
+    //     console.log(self);
+    //     console.log(self.magnifierInstance);
+    //     if (self.magnifierInstance) {
+    //         var success = options.success;
+    //         options.success = function(result) {
+    //             var optionsClone = $.extend({}, options, {
+    //                 originalTiledImage: result.item,
+    //             });
+    //
+    //             self.magnifierInstance.addTiledImage(optionsClone);
+    //
+    //             success && success(result);
+    //         };
+    //     }
+    //     return viewerAddTiledImage.apply(self, arguments);
+    // };
+
+
+    /**
+     * @class Magnifier
+     * @classdesc Allows to view part of the image magnified.
+     * @memberof OpenSeadragon
+     * @param {Object} options
+     */
+    $.Magnifier = function(options) {
+        var viewer = options.viewer,
+            self = this,
+            viewerSize,
+            magnifierSize;
+
+        //We may need to create a new element and id if they did not
+        //provide the id for the existing element
+        if( !options.id ){
+            options.id              = 'magnifier-' + $.now();
+            this.element            = $.makeNeutralElement( 'div' );
+            options.controlOptions  = {
+                anchor:           $.ControlAnchor.TOP_RIGHT,
+                attachToViewer:   true,
+                autoFade:         true
+            };
+
+            if( options.position ){
+                if( 'BOTTOM_RIGHT' === options.position ){
+                   options.controlOptions.anchor = $.ControlAnchor.BOTTOM_RIGHT;
+               } else if( 'BOTTOM_LEFT' === options.position ){
+                   options.controlOptions.anchor = $.ControlAnchor.BOTTOM_LEFT;
+               } else if( 'TOP_RIGHT' === options.position ){
+                   options.controlOptions.anchor = $.ControlAnchor.TOP_RIGHT;
+               } else if( 'TOP_LEFT' === options.position ){
+                   options.controlOptions.anchor = $.ControlAnchor.TOP_LEFT;
+               } else if( 'ABSOLUTE' === options.position ){
+                   options.controlOptions.anchor = $.ControlAnchor.ABSOLUTE;
+                   options.controlOptions.top = options.top;
+                   options.controlOptions.left = options.left;
+                   options.controlOptions.height = options.height;
+                   options.controlOptions.width = options.width;
+                }
+            }
+
+        } else {
+            this.element            = document.getElementById( options.id );
+            options.controlOptions  = {
+                anchor:           $.ControlAnchor.NONE,
+                attachToViewer:   false,
+                autoFade:         false
+            };
+        }
+        this.element.id         = options.id;
+        this.element.className  += ' magnifier';
+
+        options = $.extend(true, $.DEFAULT_SETTINGS, {
+            sizeRatio:              0.2,
+            minPixelRatio:          viewer.minPixelRatio
+        }, options, {
+            element:                this.element,
+            tabIndex:               -1, // No keyboard navigation, omit from tab order
+            //These need to be overridden to prevent recursion since
+            //the magnifier is a viewer and a viewer has a magnifier/navigator
+            showNavigator:          false,
+            showNavigationControl:  false,
+            showSequenceControl:    false,
+            magnifier:              null,
+            immediateRender:        true,
+            blendTime:              0,
+            animationTime:          0,
+            autoResize:             options.autoResize,
+            // prevent resizing the magnifier from adding unwanted space around the image
+            minZoomImageRatio:      1.0
+        });
+
+        $.setElementTouchActionNone( this.element );
+
+        this.borderWidth = 2;
+        //At some browser magnification levels the display regions lines up correctly, but at some there appears to
+        //be a one pixel gap.
+        this.fudge = new $.Point(1, 1);
+        this.totalBorderWidths = new $.Point(this.borderWidth*2, this.borderWidth*2).minus(this.fudge);
+
+
+        if ( options.controlOptions.anchor !== $.ControlAnchor.NONE ) {
+            (function( style, borderWidth ){
+                style.margin        = '0px';
+                style.border        = borderWidth + 'px solid #555';
+                style.padding       = '0px';
+                style.background    = '#000';
+                style.opacity       = 0.8;
+                style.overflow      = 'hidden';
+            }( this.element.style, this.borderWidth));
+        }
+
+        this.displayRegion           = $.makeNeutralElement( 'div' );
+        this.displayRegion.id        = this.element.id + '-displayregion';
+        this.displayRegion.className = 'displayregion';
+
+        (function( style, borderWidth ){
+            style.position      = 'relative';
+            style.top           = '0px';
+            style.left          = '0px';
+            style.fontSize      = '0px';
+            style.overflow      = 'hidden';
+            style.border        = borderWidth + 'px solid #900';
+            style.margin        = '0px';
+            style.padding       = '0px';
+            style.background    = 'transparent';
+
+            // We use square bracket notation on the statement below, because float is a keyword.
+            // This is important for the Google Closure compiler, if nothing else.
+            /*jshint sub:true */
+            style['float']      = 'left'; //Webkit
+
+            style.cssFloat      = 'left'; //Firefox
+            style.styleFloat    = 'left'; //IE
+            style.zIndex        = 999999999;
+            style.cursor        = 'default';
+        }( this.displayRegion.style, this.borderWidth ));
+
+        viewer.addControl(
+            this.element,
+            options.controlOptions
+        );
+
+        this._resizeWithViewer = options.controlOptions.anchor !== $.ControlAnchor.ABSOLUTE &&
+            options.controlOptions.anchor !== $.ControlAnchor.NONE;
+
+        if ( this._resizeWithViewer ) {
+            if ( options.width && options.height ) {
+                this.element.style.height = typeof ( options.height )  === 'number' ? ( options.height + 'px' ) : options.height;
+                this.element.style.width  = typeof ( options.width )  === 'number' ? ( options.width + 'px' ) : options.width;
+            } else {
+                viewerSize = $.getElementSize( viewer.element );
+                this.element.style.height = Math.round( viewerSize.y * options.sizeRatio ) + 'px';
+                this.element.style.width  = Math.round( viewerSize.x * options.sizeRatio ) + 'px';
+                this.oldViewerSize = viewerSize;
+            }
+            magnifierSize = $.getElementSize( this.element );
+            this.elementArea = magnifierSize.x * magnifierSize.y;
+        }
+
+        this.oldContainerSize = new $.Point( 0, 0 );
+
+        $.Viewer.apply(this, [options]);
+
+        viewer.element.appendChild(this.displayRegion);
+
+        if (options.magnifierRotate) {
+            options.viewer.addHandler('rotate', function (args) {
+                // @TODO check this
+                _setTransformRotate(self.displayRegion, -args.degrees);
+                self.viewport.setRotation(args.degrees);
+            });
+        }
+
+        this.addHandler('reset-size', function() {
+            if (self.viewport) {
+                self.viewport.goHome(true);
+            }
+        });
+
+        this.addHandler('reset-size', function() {
+            if (self.viewport) {
+                self.viewport.goHome(true);
+            }
+        });
+
+        viewer.world.addHandler('item-index-change', function(event) {
+            var item = self.world.getItemAt(event.previousIndex);
+            self.world.setItemIndex(item, event.newIndex);
+        });
+
+        viewer.world.addHandler('remove-item', function(event) {
+            var theirItem = event.item;
+            var myItem = self._getMatchingItem(theirItem);
+            if (myItem) {
+                self.world.removeItem(myItem);
+            }
+        });
+
+
+        _setTiledImages(this, viewer);
+
+        this.update(viewer.viewport);
+    };
+
+    $.extend($.Magnifier.prototype, $.Viewer.prototype, /** @lends OpenSeadragon.Magnifier.prototype */{
+
+        /**
+         * Used to notify the magnifier when its size has changed.
+         * Especially useful when {@link OpenSeadragon.Options}.magnifierAutoResize is set to false and the magnifier is resizable.
+         * @function
+         */
+        updateSize: function () {
+            if ( this.viewport ) {
+                var containerSize = new $.Point(
+                        (this.container.clientWidth === 0 ? 1 : this.container.clientWidth),
+                        (this.container.clientHeight === 0 ? 1 : this.container.clientHeight)
+                    );
+
+                if ( !containerSize.equals( this.oldContainerSize ) ) {
+                    this.viewport.resize( containerSize, true );
+                    this.viewport.goHome(true);
+                    this.oldContainerSize = containerSize;
+                    this.drawer.clear();
+                    this.world.draw();
+                }
+            }
+        },
+
+        /**
+         * Used to update the magnifier minimap's viewport rectangle when a change in the viewer's viewport occurs.
+         * @function
+         * @param {OpenSeadragon.Viewport} The viewport this magnifier is tracking.
+         */
+        update: function( viewport ) {
+
+            var viewerSize,
+                newWidth,
+                newHeight,
+                bounds,
+                topleft,
+                bottomright;
+
+            viewerSize = $.getElementSize( this.viewer.element );
+            if ( this._resizeWithViewer && viewerSize.x && viewerSize.y && !viewerSize.equals( this.oldViewerSize ) ) {
+                this.oldViewerSize = viewerSize;
+
+                if ( this.maintainSizeRatio || !this.elementArea) {
+                    newWidth  = viewerSize.x * this.sizeRatio;
+                    newHeight = viewerSize.y * this.sizeRatio;
+                } else {
+                    newWidth = Math.sqrt(this.elementArea * (viewerSize.x / viewerSize.y));
+                    newHeight = this.elementArea / newWidth;
+                }
+
+                this.element.style.width  = Math.round( newWidth ) + 'px';
+                this.element.style.height = Math.round( newHeight ) + 'px';
+
+                if (!this.elementArea) {
+                    this.elementArea = newWidth * newHeight;
+                }
+
+                this.updateSize();
+            }
+
+            if( viewport && this.viewport ) {
+                bounds      = viewport.getBounds( true );
+                topleft     = this.viewport.pixelFromPoint( bounds.getTopLeft(), false );
+                bottomright = this.viewport.pixelFromPoint( bounds.getBottomRight(), false )
+                    .minus( this.totalBorderWidths );
+
+                //update style for magnifier-box
+                var style = this.displayRegion.style;
+                style.display = this.world.getItemCount() ? 'block' : 'none';
+
+                style.top    = Math.round( topleft.y ) + 'px';
+                style.left   = Math.round( topleft.x ) + 'px';
+
+                var width = Math.abs( topleft.x - bottomright.x );
+                var height = Math.abs( topleft.y - bottomright.y );
+                // make sure width and height are non-negative so IE doesn't throw
+                style.width  = Math.round( Math.max( width, 0 ) ) + 'px';
+                style.height = Math.round( Math.max( height, 0 ) ) + 'px';
+            }
+
+        },
+
+        // overrides Viewer.addTiledImage
+        addTiledImage: function(options) {
+            var _this = this;
+
+            var original = options.originalTiledImage;
+            delete options.original;
+
+            var optionsClone = $.extend({}, options, {
+                success: function(event) {
+                    var myItem = event.item;
+                    myItem._originalForNavigator = original;
+                    _this._matchBounds(myItem, original, true);
+
+                    original.addHandler('bounds-change', function() {
+                        _this._matchBounds(myItem, original);
+                    });
+                }
+            });
+
+            return $.Viewer.prototype.addTiledImage.apply(this, [optionsClone]);
+        },
+
+        // private
+        _getMatchingItem: function(theirItem) {
+            var count = this.world.getItemCount();
+            var item;
+            for (var i = 0; i < count; i++) {
+                item = this.world.getItemAt(i);
+                if (item._originalForNavigator === theirItem) {
+                    return item;
+                }
+            }
+
+            return null;
+        },
+
+        // private
+        _matchBounds: function(myItem, theirItem, immediately) {
+            var bounds = theirItem.getBounds();
+            myItem.setPosition(bounds.getTopLeft(), immediately);
+            myItem.setWidth(bounds.width, immediately);
+        }
+    });
+
+    /**
+    * @function
+    * @private
+    * @param {Object} element
+    * @param {Number} degrees
+    */
+    function _setTransformRotate (element, degrees) {
+        element.style.webkitTransform = 'rotate(' + degrees + 'deg)';
+        element.style.mozTransform = 'rotate(' + degrees + 'deg)';
+        element.style.msTransform = 'rotate(' + degrees + 'deg)';
+        element.style.oTransform = 'rotate(' + degrees + 'deg)';
+        element.style.transform = 'rotate(' + degrees + 'deg)';
+    }
+
+    function _setTiledImages(magnifier, viewer) {
+        var tiledImage;
+        for (var i = 0; i < viewer.world.getItemCount(); i++) {
+            tiledImage = viewer.world.getItemAt(i);
+            magnifier.world.addItem(cloneTiledImage(magnifier, tiledImage));
+        }
+        viewer.world.addHandler('add-item', function(event) {
+            magnifier.world.addItem(cloneTiledImage(magnifier, event.item), {
+                index: viewer.world.getIndexOfItem(event.item)
+            });
+        });
+    }
+
+    function cloneTiledImage(magnifier, tiledImage) {
+        var myItem = new $.TiledImage({
+            viewer: magnifier,
+            source: tiledImage.source,
+            viewport: magnifier.viewport,
+            drawer: magnifier.drawer,
+            tileCache: tiledImage._tileCache,
+            imageLoader: tiledImage._imageLoader,
+            // x: tiledImage.x,
+            // y: tiledImage.y,
+            // width: tiledImage.width,
+            // height: tiledImage.height,
+            clip: tiledImage._clip,
+            placeholderFillStyle: tiledImage.placeholderFillStyle,
+            opacity: tiledImage.opacity,
+            springStiffness: magnifier.springStiffness,
+            animationTime: magnifier.animationTime,
+            minZoomImageRatio: magnifier.minZoomImageRatio,
+            wrapHorizontal: magnifier.wrapHorizontal,
+            wrapVertical: magnifier.wrapVertical,
+            immediateRender: magnifier.immediateRender,
+            blendTime: magnifier.blendTime,
+            alwaysBlend: magnifier.alwaysBlend,
+            minPixelRatio: magnifier.minPixelRatio,
+            smoothTileEdgesMinZoom: magnifier.smoothTileEdgesMinZoom,
+            crossOriginPolicy: magnifier.crossOriginPolicy,
+            debugMode: magnifier.debugMode
+        });
+        myItem._originalForNavigator = tiledImage;
+        magnifier._matchBounds(myItem, tiledImage, true);
+
+        tiledImage.addHandler('bounds-change', function() {
+            magnifier._matchBounds(myItem, tiledImage);
+        });
+
+        return myItem;
+    }
+
+})(OpenSeadragon);
