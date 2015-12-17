@@ -89,7 +89,8 @@
 
         options = $.extend(true, $.DEFAULT_SETTINGS, {
             sizeRatio:              0.2,
-            minPixelRatio:          viewer.minPixelRatio
+            minPixelRatio:          viewer.minPixelRatio,
+            magnifierRotate:        true,
         }, options, {
             element:                this.element,
             tabIndex:               -1, // No keyboard navigation, omit from tab order
@@ -110,10 +111,7 @@
         $.setElementTouchActionNone( this.element );
 
         this.borderWidth = 2;
-        //At some browser magnification levels the display regions lines up correctly, but at some there appears to
-        //be a one pixel gap.
-        this.fudge = new $.Point(1, 1);
-        this.totalBorderWidths = new $.Point(this.borderWidth*2, this.borderWidth*2).minus(this.fudge);
+        this.totalBorderWidths = new $.Point(this.borderWidth*2, this.borderWidth*2);
 
 
         if ( options.controlOptions.anchor !== $.ControlAnchor.NONE ) {
@@ -122,7 +120,6 @@
                 style.border        = borderWidth + 'px solid #555';
                 style.padding       = '0px';
                 style.background    = '#000';
-                style.opacity       = 0.8;
                 style.overflow      = 'hidden';
             }( this.element.style, this.borderWidth));
         }
@@ -132,25 +129,11 @@
         this.displayRegion.className = 'displayregion';
 
         (function( style, borderWidth ){
-            style.position      = 'relative';
-            style.top           = '0px';
-            style.left          = '0px';
-            style.fontSize      = '0px';
-            style.overflow      = 'hidden';
+            style.position      = 'absolute';
             style.border        = borderWidth + 'px solid #900';
             style.margin        = '0px';
             style.padding       = '0px';
-            style.background    = 'transparent';
-
-            // We use square bracket notation on the statement below, because float is a keyword.
-            // This is important for the Google Closure compiler, if nothing else.
-            /*jshint sub:true */
-            style['float']      = 'left'; //Webkit
-
-            style.cssFloat      = 'left'; //Firefox
-            style.styleFloat    = 'left'; //IE
-            style.zIndex        = 999999999;
-            style.cursor        = 'default';
+            style.cursor        = 'move';
         }( this.displayRegion.style, this.borderWidth ));
 
         viewer.addControl(
@@ -179,12 +162,11 @@
 
         $.Viewer.apply(this, [options]);
 
-        viewer.element.appendChild(this.displayRegion);
+        viewer.canvas.appendChild(this.displayRegion);
 
         if (options.magnifierRotate) {
-            options.viewer.addHandler('rotate', function (args) {
-                // @TODO check this
-                _setTransformRotate(self.displayRegion, -args.degrees);
+            viewer.addHandler('rotate', function (args) {
+                // _setTransformRotate(self.displayRegion, -args.degrees);
                 self.viewport.setRotation(args.degrees);
             });
         }
@@ -195,9 +177,37 @@
             }
         });
 
-        this.addHandler('reset-size', function() {
-            if (self.viewport) {
-                self.viewport.goHome(true);
+        this.addHandler('update-level', function() {
+            if (viewer.viewport) {
+                self.update(viewer.viewport);
+            }
+        });
+
+        viewer.addHandler('update-level', function() {
+            if (viewer.viewport) {
+                self.update(viewer.viewport);
+            }
+        });
+
+        viewer.addHandler('close', function() {
+            self.close();
+        });
+
+        viewer.addHandler('full-page', function() {
+            if (viewer.viewport) {
+                self.update(viewer.viewport);
+            }
+        });
+
+        viewer.addHandler('full-screen', function() {
+            if (viewer.viewport) {
+                self.update(viewer.viewport);
+            }
+        });
+
+        viewer.world.addHandler('update-viewport', function() {
+            if (viewer.viewport) {
+                self.update(viewer.viewport);
             }
         });
 
@@ -280,18 +290,20 @@
                 this.updateSize();
             }
 
-            if( viewport && this.viewport ) {
-                bounds      = viewport.getBounds( true );
-                topleft     = this.viewport.pixelFromPoint( bounds.getTopLeft(), false );
-                bottomright = this.viewport.pixelFromPoint( bounds.getBottomRight(), false )
+            if (viewport && this.viewport) {
+                bounds      = this.viewport.getBounds( true );
+                topleft     = viewport.pixelFromPoint( bounds.getTopLeft(), true );
+                bottomright = viewport.pixelFromPoint( bounds.getBottomRight(), true )
                     .minus( this.totalBorderWidths );
 
                 //update style for magnifier-box
                 var style = this.displayRegion.style;
                 style.display = this.world.getItemCount() ? 'block' : 'none';
 
-                style.top    = Math.round( topleft.y ) + 'px';
-                style.left   = Math.round( topleft.x ) + 'px';
+                var xy = topleft.rotate(this.viewport.degrees, new $.Point(0, 0));
+                console.log(topleft, xy);
+                style.top    = Math.round( xy.y ) + 'px';
+                style.left   = Math.round( xy.x ) + 'px';
 
                 var width = Math.abs( topleft.x - bottomright.x );
                 var height = Math.abs( topleft.y - bottomright.y );
