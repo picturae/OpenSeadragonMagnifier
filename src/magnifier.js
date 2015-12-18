@@ -136,13 +136,43 @@
             style.border        = borderWidth + 'px solid #900';
             style.margin        = '0px';
             style.padding       = '0px';
-            style.cursor        = 'move';
         }( this.displayRegion.style, this.borderWidth ));
 
-        this.displayRegionContainer = $.makeNeutralElement('div');
-        this.displayRegionContainer.id = this.element.id + '-displayregioncontainer';
-        this.displayRegionContainer.className = 'displayregioncontainer';
-        this.displayRegionContainer.style.width = '0';
+        this.regionMoveHangle                 = $.makeNeutralElement( 'div' );
+        this.regionMoveHangle.id              = this.element.id + '-displayregion-move';
+        this.regionMoveHangle.className       = 'displayregion-move';
+        this.regionMoveHangle.style.width     = '10%';
+        this.regionMoveHangle.style.height    = '10%';
+        this.regionMoveHangle.style.maxWidth  = '50px';
+        this.regionMoveHangle.style.maxHeight = '50px';
+        this.regionMoveHangle.style.cursor    = 'move';
+        // this.regionMoveHangle.style.background = '#000';
+        new $.MouseTracker({
+            element:     this.regionMoveHangle,
+            dragHandler: moveRegion.bind(this),
+        });
+
+        this.regionResizeHangle                 = $.makeNeutralElement( 'div' );
+        this.regionResizeHangle.id              = this.element.id + '-displayregion-move';
+        this.regionResizeHangle.className       = 'displayregion-move';
+        this.regionResizeHangle.style.position  = 'absolute';
+        this.regionResizeHangle.style.bottom    = '-1px';
+        this.regionResizeHangle.style.right     = '-1px';
+        this.regionResizeHangle.style.width     = '10%';
+        this.regionResizeHangle.style.height    = '10%';
+        this.regionResizeHangle.style.maxWidth  = '50px';
+        this.regionResizeHangle.style.maxHeight = '50px';
+        this.regionResizeHangle.style.cursor    = 'se-resize';
+        // this.regionResizeHangle.style.background = '#000';
+        new $.MouseTracker({
+            element:     this.regionResizeHangle,
+            dragHandler: resizeRegion.bind(this),
+        });
+
+        this.displayRegionContainer              = $.makeNeutralElement('div');
+        this.displayRegionContainer.id           = this.element.id + '-displayregioncontainer';
+        this.displayRegionContainer.className    = 'displayregioncontainer';
+        this.displayRegionContainer.style.width  = '0';
         this.displayRegionContainer.style.height = '0';
 
         viewer.addControl(
@@ -171,6 +201,8 @@
 
         $.Viewer.apply(this, [options]);
 
+        this.displayRegion.appendChild(this.regionMoveHangle);
+        this.displayRegion.appendChild(this.regionResizeHangle);
         this.displayRegionContainer.appendChild(this.displayRegion);
         viewer.canvas.appendChild(this.displayRegionContainer);
 
@@ -427,5 +459,9 @@
 
         return myItem;
     }
+
+    function moveRegion() {}
+    
+    function resizeRegion() {}
 
 })(OpenSeadragon);
