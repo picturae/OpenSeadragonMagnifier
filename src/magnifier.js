@@ -111,7 +111,10 @@
         $.setElementTouchActionNone( this.element );
 
         this.borderWidth = 2;
-        this.totalBorderWidths = new $.Point(this.borderWidth*2, this.borderWidth*2);
+        //At some browser magnification levels the display regions lines up correctly, but at some there appears to
+        //be a one pixel gap.
+        this.fudge = new $.Point(1, 1);
+        this.totalBorderWidths = new $.Point(this.borderWidth*2, this.borderWidth*2).minus(this.fudge);
 
 
         if ( options.controlOptions.anchor !== $.ControlAnchor.NONE ) {
@@ -135,6 +138,12 @@
             style.padding       = '0px';
             style.cursor        = 'move';
         }( this.displayRegion.style, this.borderWidth ));
+
+        this.displayRegionContainer = $.makeNeutralElement('div');
+        this.displayRegionContainer.id = this.element.id + '-displayregioncontainer';
+        this.displayRegionContainer.className = 'displayregioncontainer';
+        this.displayRegionContainer.style.width = '0';
+        this.displayRegionContainer.style.height = '0';
 
         viewer.addControl(
             this.element,
@@ -162,11 +171,15 @@
 
         $.Viewer.apply(this, [options]);
 
-        viewer.canvas.appendChild(this.displayRegion);
+        this.displayRegionContainer.appendChild(this.displayRegion);
+        viewer.canvas.appendChild(this.displayRegionContainer);
 
         if (options.magnifierRotate) {
             viewer.addHandler('rotate', function (args) {
-                // _setTransformRotate(self.displayRegion, -args.degrees);
+                var center = viewer.viewport.pixelFromPoint(viewer.viewport.getCenter(), true);
+                self.displayRegionContainer.style.transformOrigin = center.x + 'px ' + center.y + 'px';
+                _setTransformRotate(self.displayRegionContainer, args.degrees);
+                _setTransformRotate(self.displayRegion, -args.degrees);
                 self.viewport.setRotation(args.degrees);
             });
         }
@@ -255,21 +268,15 @@
         },
 
         /**
-         * Used to update the magnifier minimap's viewport rectangle when a change in the viewer's viewport occurs.
+         * Used to update the magnifier's viewport rectangle when a change in the viewer's viewport occurs.
          * @function
          * @param {OpenSeadragon.Viewport} The viewport this magnifier is tracking.
          */
         update: function( viewport ) {
-
-            var viewerSize,
-                newWidth,
-                newHeight,
-                bounds,
-                topleft,
-                bottomright;
-
-            viewerSize = $.getElementSize( this.viewer.element );
+            var viewerSize = $.getElementSize( this.viewer.element );
             if ( this._resizeWithViewer && viewerSize.x && viewerSize.y && !viewerSize.equals( this.oldViewerSize ) ) {
+                var newWidth;
+                var newHeight;
                 this.oldViewerSize = viewerSize;
 
                 if ( this.maintainSizeRatio || !this.elementArea) {
@@ -291,19 +298,17 @@
             }
 
             if (viewport && this.viewport) {
-                bounds      = this.viewport.getBounds( true );
-                topleft     = viewport.pixelFromPoint( bounds.getTopLeft(), true );
-                bottomright = viewport.pixelFromPoint( bounds.getBottomRight(), true )
+                var bounds      = this.viewport.getBounds( true );
+                var topleft     = viewport.pixelFromPoint( bounds.getTopLeft(), true );
+                var bottomright = viewport.pixelFromPoint( bounds.getBottomRight(), true )
                     .minus( this.totalBorderWidths );
 
                 //update style for magnifier-box
                 var style = this.displayRegion.style;
                 style.display = this.world.getItemCount() ? 'block' : 'none';
 
-                var xy = topleft.rotate(this.viewport.degrees, new $.Point(0, 0));
-                console.log(topleft, xy);
-                style.top    = Math.round( xy.y ) + 'px';
-                style.left   = Math.round( xy.x ) + 'px';
+                style.top    = Math.round( topleft.y ) + 'px';
+                style.left   = Math.round( topleft.x ) + 'px';
 
                 var width = Math.abs( topleft.x - bottomright.x );
                 var height = Math.abs( topleft.y - bottomright.y );
