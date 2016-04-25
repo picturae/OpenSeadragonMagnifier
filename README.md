@@ -4,7 +4,7 @@ An OpenSeadragon plugin to view part of the image magnified.
 
 ## Demo
 
-http://picturae.github.io/openseadragonselection/#magnifier
+@TODO http://picturae.github.io/openseadragonselection/#magnifier
 
 ## Usage
 
