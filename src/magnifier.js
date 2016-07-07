@@ -388,6 +388,7 @@
         toggleVisibility: function() {
            toggleBlockElement(this.element);
            toggleBlockElement(this.displayRegionContainer);
+           return this;
         },
 
         // private
