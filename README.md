@@ -18,3 +18,8 @@ Include `dist/openseadragonmagnifier.js` after OpenSeadragon in your html. Then 
         // ... supports all OpenSeadragon viewer options
         // because it is essentially a mini viewer
     });
+
+## TODO
+
+- Rotation
+- Demo
