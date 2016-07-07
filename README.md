@@ -6,7 +6,7 @@ It could be useful for zooming into 2 separate parts of an image to compare them
 
 ## Demo
 
-@TODO http://picturae.github.io/openseadragonselection/#magnifier
+http://picturae.github.io/openseadragonselection/#magnifier
 
 ## Usage
 
@@ -24,5 +24,4 @@ Include `dist/openseadragonmagnifier.js` after OpenSeadragon in your html. Then 
 
 ## TODO
 
-- Rotation
-- Demo
+- Fix Rotation
