@@ -93,6 +93,7 @@
             minPixelRatio:          viewer.minPixelRatio,
             defaultZoomLevel:       viewer.viewport.getZoom() * 2,
             minZoomLevel:           1,
+            keyboardShortcut:       'm',
         }, options, {
             element:                this.element,
             tabIndex:               -1, // No keyboard navigation, omit from tab order
@@ -207,6 +208,15 @@
         this.displayRegion.appendChild(this.regionResizeHangle);
         this.displayRegionContainer.appendChild(this.displayRegion);
         viewer.canvas.appendChild(this.displayRegionContainer);
+
+        if (this.keyboardShortcut) {
+            $.addEvent(
+                this.viewer.container,
+                'keypress',
+                $.delegate(this, onKeyPress),
+                false
+            );
+        }
 
         if (options.magnifierRotate) {
             viewer.addHandler('rotate', function (args) {
@@ -375,6 +385,11 @@
             return $.Viewer.prototype.addTiledImage.apply(this, [optionsClone]);
         },
 
+        toggleVisibility: function() {
+           toggleBlockElement(this.element);
+           toggleBlockElement(this.displayRegionContainer);
+        },
+
         // private
         _getMatchingItem: function(theirItem) {
             var count = this.world.getItemCount();
@@ -491,6 +506,17 @@
             this.viewport.zoomTo(zoom, undefined, true);
             // this.viewport.panTo(bounds.getCenter().plus(delta), true);
         }
+    }
+
+    function onKeyPress(e) {
+        var key = e.keyCode || e.charCode;
+         if (String.fromCharCode(key) === this.keyboardShortcut) {
+            this.toggleVisibility();
+        }
+    }
+
+    function toggleBlockElement(el) {
+        el.style.display = el.style.display === 'none' ? 'block' : 'none';
     }
 
 })(OpenSeadragon);

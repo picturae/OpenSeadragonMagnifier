@@ -15,6 +15,7 @@ Include `dist/openseadragonmagnifier.js` after OpenSeadragon in your html. Then 
     var magnifier = viewer.magnifier({
         sizeRatio:              0.2, // size relative to parent viewer
         magnifierRotate:        true, // rotate with parent viewer (does not work yet)
+        keyboardShortcut:       'm', // to toggle magnifier visibility
         // ... supports all OpenSeadragon viewer options
         // because it is essentially a mini viewer
     });
