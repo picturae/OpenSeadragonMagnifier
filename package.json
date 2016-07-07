@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "An OpenSeadragon plugin to view part of the image magnified.",
   "main": "src/magnifier.js",
-  "scripts": {},
+  "scripts": {
+    "start": "gulp"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/picturae/OpenSeadragonMagnifier.git"
