@@ -2,6 +2,8 @@
 
 An OpenSeadragon plugin to view part of the image magnified.
 
+It could be useful for zooming into 2 separate parts of an image to compare them.
+
 ## Demo
 
 @TODO http://picturae.github.io/openseadragonselection/#magnifier
