@@ -52,11 +52,11 @@
         if( !options.id ){
             options.id              = 'magnifier-' + $.now();
             this.element            = $.makeNeutralElement( 'div' );
-            options.controlOptions  = {
-                anchor:           $.ControlAnchor.TOP_RIGHT,
+            options.controlOptions  = $.extend(true, {
+                anchor:           $.ControlAnchor.BOTTOM_RIGHT,
                 attachToViewer:   true,
-                autoFade:         true
-            };
+                autoFade:         false
+            }, options.controlOptions || {});
 
             if( options.position ){
                 if( 'BOTTOM_RIGHT' === options.position ){
@@ -78,19 +78,21 @@
 
         } else {
             this.element            = document.getElementById( options.id );
-            options.controlOptions  = {
+            options.controlOptions  = $.extend(true, {
                 anchor:           $.ControlAnchor.NONE,
                 attachToViewer:   false,
                 autoFade:         false
-            };
+            }, options.controlOptions || {});
         }
         this.element.id         = options.id;
         this.element.className  += ' magnifier';
 
         options = $.extend(true, $.DEFAULT_SETTINGS, {
             sizeRatio:              0.2,
+            magnifierRotate:        true, // @TODO
             minPixelRatio:          viewer.minPixelRatio,
-            magnifierRotate:        true,
+            defaultZoomLevel:       viewer.viewport.getZoom() * 2,
+            minZoomLevel:           1,
         }, options, {
             element:                this.element,
             tabIndex:               -1, // No keyboard navigation, omit from tab order
@@ -146,10 +148,10 @@
         this.regionMoveHangle.style.maxWidth  = '50px';
         this.regionMoveHangle.style.maxHeight = '50px';
         this.regionMoveHangle.style.cursor    = 'move';
-        // this.regionMoveHangle.style.background = '#000';
+        this.regionMoveHangle.style.background = 'rgba(0, 0, 0, .1)';
         new $.MouseTracker({
             element:     this.regionMoveHangle,
-            dragHandler: moveRegion.bind(this),
+            dragHandler: $.delegate(this, moveRegion),
         });
 
         this.regionResizeHangle                 = $.makeNeutralElement( 'div' );
@@ -163,10 +165,10 @@
         this.regionResizeHangle.style.maxWidth  = '50px';
         this.regionResizeHangle.style.maxHeight = '50px';
         this.regionResizeHangle.style.cursor    = 'se-resize';
-        // this.regionResizeHangle.style.background = '#000';
+        this.regionResizeHangle.style.background = 'rgba(0, 0, 0, .1)';
         new $.MouseTracker({
             element:     this.regionResizeHangle,
-            dragHandler: resizeRegion.bind(this),
+            dragHandler: $.delegate(this, resizeRegion),
         });
 
         this.displayRegionContainer              = $.makeNeutralElement('div');
@@ -460,8 +462,35 @@
         return myItem;
     }
 
-    function moveRegion() {}
-    
-    function resizeRegion() {}
+    function moveRegion(event) {
+        if (this.viewport) {
+            if (!this.panHorizontal ){
+                event.delta.x = 0;
+            }
+            if (!this.panVertical){
+                event.delta.y = 0;
+            }
+            this.viewport.panBy(
+                this.viewer.viewport.deltaPointsFromPixels(
+                    event.delta
+                )
+            );
+        }
+    }
+
+    function resizeRegion(event) {
+        var bounds      = this.viewport.getBounds( true );
+        var topleft     = this.viewer.viewport.pixelFromPoint( bounds.getTopLeft(), true );
+        var bottomright = this.viewer.viewport.pixelFromPoint( bounds.getBottomRight(), true )
+            .minus( this.totalBorderWidths );
+        var width  = Math.abs( topleft.x - bottomright.x );
+        var height = Math.abs( topleft.y - bottomright.y );
+        var delta  = (event.delta.x / width) + (event.delta.y / height);
+        var zoom = this.viewport.getZoom() * (1 - delta);
+        if (zoom > this.minZoomImageRatio && zoom < this.viewport.getMaxZoom()) {
+            this.viewport.zoomTo(zoom, undefined, true);
+            // this.viewport.panTo(bounds.getCenter().plus(delta), true);
+        }
+    }
 
 })(OpenSeadragon);
