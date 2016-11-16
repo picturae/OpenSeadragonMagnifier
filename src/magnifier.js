@@ -81,7 +81,7 @@
             options.controlOptions  = $.extend(true, {
                 anchor:           $.ControlAnchor.NONE,
                 attachToViewer:   false,
-                autoFade:         false
+                autoFade:         false,
             }, options.controlOptions || {});
         }
         this.element.id         = options.id;
@@ -94,6 +94,15 @@
             defaultZoomLevel:       viewer.viewport.getZoom() * 2,
             minZoomLevel:           1,
             keyboardShortcut:       'm',
+            hiddenByDefault: true,
+            navImages: {
+                magnifier: {
+                    REST: 'selection_rest.png',
+                    GROUP: 'selection_grouphover.png',
+                    HOVER: 'selection_hover.png',
+                    DOWN: 'selection_pressed.png'
+                }
+            }
         }, options, {
             element:                this.element,
             tabIndex:               -1, // No keyboard navigation, omit from tab order
@@ -108,7 +117,7 @@
             animationTime:          0,
             autoResize:             options.autoResize,
             // prevent resizing the magnifier from adding unwanted space around the image
-            minZoomImageRatio:      1.0
+            minZoomImageRatio:      1.0,
         });
 
         $.setElementTouchActionNone( this.element );
@@ -182,6 +191,12 @@
             this.element,
             options.controlOptions
         );
+
+        // Hidden by default
+        if (options.hiddenByDefault) {
+            this.element.style.display = 'none';
+            this.displayRegionContainer.style.display = 'none';
+        }
 
         this._resizeWithViewer = options.controlOptions.anchor !== $.ControlAnchor.ABSOLUTE &&
             options.controlOptions.anchor !== $.ControlAnchor.NONE;
