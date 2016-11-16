@@ -69,6 +69,8 @@
         options = $.extend(true, $.DEFAULT_SETTINGS, {
             sizeRatio:              0.2,
             magnifierRotate:        true, // @TODO
+            viewerWidth: null,
+            viewerHeight: null,
             minPixelRatio:          viewer.minPixelRatio,
             defaultZoomLevel:       viewer.viewport.getZoom() * 2,
             minZoomLevel:           1,
@@ -101,6 +103,9 @@
         $.setElementTouchActionNone( this.element );
 
         this.borderWidth = 2;
+        this.viewerWidth = options.viewerWidth;
+        this.viewerHeight = options.viewerHeight;
+
         //At some browser magnification levels the display regions lines up correctly, but at some there appears to
         //be a one pixel gap.
         this.fudge = new $.Point(1, 1);
@@ -338,6 +343,12 @@
                 } else {
                     newWidth = Math.sqrt(this.elementArea * (viewerSize.x / viewerSize.y));
                     newHeight = this.elementArea / newWidth;
+                }
+
+                // When dimensions are suplied with the plugin options
+                if (this.viewerWidth && this.viewerHeight) {
+                    newWidth = this.viewerWidth;
+                    newHeight = this.viewerHeight;
                 }
 
                 this.element.style.width  = Math.round( newWidth ) + 'px';
