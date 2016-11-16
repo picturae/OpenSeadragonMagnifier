@@ -14,27 +14,6 @@
         return this.magnifierInstance;
     };
 
-    // var viewerAddTiledImage = $.Viewer.prototype.addTiledImage;
-    // $.Viewer.prototype.addTiledImage = function(options) {
-    //     var self = this;
-    //     console.log(self);
-    //     console.log(self.magnifierInstance);
-    //     if (self.magnifierInstance) {
-    //         var success = options.success;
-    //         options.success = function(result) {
-    //             var optionsClone = $.extend({}, options, {
-    //                 originalTiledImage: result.item,
-    //             });
-    //
-    //             self.magnifierInstance.addTiledImage(optionsClone);
-    //
-    //             success && success(result);
-    //         };
-    //     }
-    //     return viewerAddTiledImage.apply(self, arguments);
-    // };
-
-
     /**
      * @class Magnifier
      * @classdesc Allows to view part of the image magnified.
@@ -128,6 +107,27 @@
         this.fudge = new $.Point(1, 1);
         this.totalBorderWidths = new $.Point(this.borderWidth*2, this.borderWidth*2).minus(this.fudge);
 
+        if (options.showMagnifierControl, options.magnifierButton) {
+            var prefix = options.prefixUrl || '';
+            var useGroup = viewer.buttons && viewer.buttons.buttons;
+            var anyButton = useGroup ? viewer.buttons.buttons[0] : null;
+            var onFocusHandler = anyButton ? anyButton.onFocus : null;
+            var onBlurHandler = anyButton ? anyButton.onBlur : null;
+
+            viewer.magnifierButton = new $.Button({
+                element: options.magnifierButton ? $.getElement(options.magnifierButton) : null,
+                clickTimeThreshold: viewer.clickTimeThreshold,
+                clickDistThreshold: viewer.clickDistThreshold,
+                tooltip: $.getString('Tooltips.SelectionToggle') || 'Toggle selection',
+                srcRest: prefix + options.navImages.magnifier.REST,
+                srcGroup: prefix + options.navImages.magnifier.GROUP,
+                srcHover: prefix + options.navImages.magnifier.HOVER,
+                srcDown: prefix + options.navImages.magnifier.DOWN,
+                onRelease: this.toggleVisibility.bind(this),
+                onFocus: onFocusHandler,
+                onBlur: onBlurHandler
+            });
+        }
 
         if ( options.controlOptions.anchor !== $.ControlAnchor.NONE ) {
             (function( style, borderWidth ){
@@ -300,6 +300,7 @@
         _setTiledImages(this, viewer);
 
         this.update(viewer.viewport);
+
     };
 
     $.extend($.Magnifier.prototype, $.Viewer.prototype, /** @lends OpenSeadragon.Magnifier.prototype */{
