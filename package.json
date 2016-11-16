@@ -20,8 +20,7 @@
     "url": "https://github.com/picturae/OpenSeadragonMagnifier/issues"
   },
   "homepage": "http://picturae.github.io/openseadragonselection/#magnifier",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "gulp": "^3.9.0",
     "gulp-concat": "^2.6.0",
@@ -32,6 +31,7 @@
     "gulp-sourcemaps": "^1.6.0",
     "gulp-uglify": "^1.4.2",
     "gulp-util": "^3.0.6",
+    "jshint": "^2.9.4",
     "jshint-stylish": "^2.0.1"
   }
 }
