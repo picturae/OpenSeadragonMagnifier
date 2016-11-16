@@ -73,7 +73,6 @@
             defaultZoomLevel:       viewer.viewport.getZoom() * 2,
             minZoomLevel:           1,
             keyboardShortcut:       'm',
-            hiddenByDefault: true,
             navImages: {
                 magnifier: {
                     REST: 'selection_rest.png',
@@ -191,12 +190,6 @@
             this.element,
             options.controlOptions
         );
-
-        // Hidden by default
-        if (options.hiddenByDefault) {
-            this.element.style.display = 'none';
-            this.displayRegionContainer.style.display = 'none';
-        }
 
         this._resizeWithViewer = options.controlOptions.anchor !== $.ControlAnchor.ABSOLUTE &&
             options.controlOptions.anchor !== $.ControlAnchor.NONE;
