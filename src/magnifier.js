@@ -66,7 +66,7 @@
         this.element.id         = options.id;
         this.element.className  += ' magnifier';
 
-        options = $.extend(true, $.DEFAULT_SETTINGS, {
+        options = $.extend(true, {
             sizeRatio:              0.2,
             magnifierRotate:        true, // @TODO
             viewerWidth: null,
