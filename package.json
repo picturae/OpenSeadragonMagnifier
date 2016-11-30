@@ -1,6 +1,6 @@
 {
   "name": "OpenSeadragonMagnifier",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "An OpenSeadragon plugin to view part of the image magnified.",
   "main": "src/magnifier.js",
   "scripts": {

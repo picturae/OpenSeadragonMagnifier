@@ -294,6 +294,7 @@
             }
         });
 
+        this.storedBounds = null;
 
         _setTiledImages(this, viewer);
 
@@ -379,6 +380,8 @@
                 // make sure width and height are non-negative so IE doesn't throw
                 style.width  = Math.round( Math.max( width, 0 ) ) + 'px';
                 style.height = Math.round( Math.max( height, 0 ) ) + 'px';
+
+                this.storedBounds = bounds;
             }
 
         },
@@ -457,6 +460,10 @@
             magnifier.world.addItem(cloneTiledImage(magnifier, event.item), {
                 index: viewer.world.getIndexOfItem(event.item)
             });
+
+            if (magnifier.storedBounds) {
+                magnifier.viewport.fitBounds(magnifier.storedBounds, true);
+            }
         });
     }
 
@@ -468,10 +475,6 @@
             drawer: magnifier.drawer,
             tileCache: tiledImage._tileCache,
             imageLoader: tiledImage._imageLoader,
-            // x: tiledImage.x,
-            // y: tiledImage.y,
-            // width: tiledImage.width,
-            // height: tiledImage.height,
             clip: tiledImage._clip,
             placeholderFillStyle: tiledImage.placeholderFillStyle,
             opacity: tiledImage.opacity,
@@ -511,6 +514,8 @@
                     event.delta
                 )
             );
+
+            // store position
         }
     }
 
