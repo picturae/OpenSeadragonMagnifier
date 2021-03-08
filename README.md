@@ -22,6 +22,10 @@ Include `dist/openseadragonmagnifier.js` after OpenSeadragon in your html. Then 
         // because it is essentially a mini viewer
     });
 
+## Build
+
+Build using 'npm run build'
+
 ## TODO
 
 - Fix Rotation

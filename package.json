@@ -2,9 +2,11 @@
   "name": "OpenSeadragonMagnifier",
   "version": "1.1.0",
   "description": "An OpenSeadragon plugin to view part of the image magnified.",
-  "main": "src/magnifier.js",
+  "main": "dist/openseadragonmagnifier.js",
+  "module": "module/openseadragonmagnifier.js",
   "scripts": {
-    "start": "gulp"
+    "prebuild": "eslint src/*.js",
+    "build": "rollup --config"
   },
   "repository": {
     "type": "git",
@@ -31,16 +33,9 @@
   },
   "homepage": "https://github.com/picturae/OpenSeadragonMagnifier",
   "devDependencies": {
-    "gulp": "^3.9.0",
-    "gulp-concat": "^2.6.0",
-    "gulp-jshint": "^1.11.2",
-    "gulp-load-plugins": "^0.10.0",
-    "gulp-plumber": "^1.0.1",
-    "gulp-serve": "^1.2.0",
-    "gulp-sourcemaps": "^1.6.0",
-    "gulp-uglify": "^1.4.2",
-    "gulp-util": "^3.0.6",
-    "jshint": "^2.9.4",
-    "jshint-stylish": "^2.0.1"
+    "eslint": "^7.21.0",
+    "rollup": "^2.40.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "terser": "^5.6.0"
   }
 }
