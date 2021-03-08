@@ -2,7 +2,7 @@
     'use strict';
 
     if (!$.version || $.version.major < 2) {
-        throw new Error('This version of MpenSeadragonmagnifier requires OpenSeadragon version 2.0.0+');
+        throw new Error('This version of Magnifier requires OpenSeadragon version 2.0.0+');
     }
 
     $.Viewer.prototype.magnifier = function(options) {

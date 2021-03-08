@@ -1,6 +1,6 @@
 {
   "name": "OpenSeadragonMagnifier",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "An OpenSeadragon plugin to view part of the image magnified.",
   "main": "src/magnifier.js",
   "scripts": {
@@ -14,13 +14,22 @@
     "openseadragon",
     "magnifier"
   ],
-  "author": "Petar Petrov",
+  "contributors": [
+    {
+      "name": "Petar Petrov"
+    },
+    {
+      "name": "Hendrik Lammers"
+    },
+    {
+      "name": "Onno van der Zee"
+    }
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/picturae/OpenSeadragonMagnifier/issues"
   },
-  "homepage": "http://picturae.github.io/openseadragonselection/#magnifier",
-  "dependencies": {},
+  "homepage": "https://github.com/picturae/OpenSeadragonMagnifier",
   "devDependencies": {
     "gulp": "^3.9.0",
     "gulp-concat": "^2.6.0",
