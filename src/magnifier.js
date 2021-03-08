@@ -140,8 +140,41 @@
                 style.padding       = '0px';
                 style.background    = '#000';
                 style.overflow      = 'hidden';
+                style.minWidth      = '50px';
+                style.minHeight     = '50px';
             }( this.element.style, this.borderWidth));
         }
+
+        this.magnifierResizeHandle                 = $.makeNeutralElement( 'div' );
+        this.magnifierResizeHandle.id              = this.element.id + '-magnifier-resize';
+        this.magnifierResizeHandle.className       = 'magnifier-resize';
+        this.magnifierResizeHandle.style.position  = 'absolute';
+        this.magnifierResizeHandle.style.top       = '-1px';
+        this.magnifierResizeHandle.style.left      = '-1px';
+        this.magnifierResizeHandle.style.width     = '10%';
+        this.magnifierResizeHandle.style.height    = '10%';
+        this.magnifierResizeHandle.style.maxWidth  = '50px';
+        this.magnifierResizeHandle.style.maxHeight = '50px';
+        this.magnifierResizeHandle.style.cursor    = 'nw-resize';
+        this.magnifierResizeHandle.style.zIndex    = '4'; // we need to be on top of OpenSeadragon
+        this.magnifierResizeHandle.style.background = 'rgba(0, 0, 0, .1)';
+
+        new $.MouseTracker({
+            element:     this.element,
+            dragHandler: $.delegate(this, function (event) {
+              const viewerSize = $.getElementSize( this.viewer.element );
+              let newWidth = parseInt(this.element.style.width, 10) - event.delta.x;
+              newWidth = Math.min(newWidth, viewerSize.x * .75);
+              newWidth = Math.max(newWidth, parseInt(this.element.style.minWidth, 10));
+              this.element.style.width = newWidth + 'px';
+              let newHeight = parseInt(this.element.style.height, 10) - event.delta.y;
+              newHeight = Math.min(newHeight, viewerSize.y * .75);
+              newHeight = Math.max(newHeight, parseInt(this.element.style.minHeight, 10));
+              this.element.style.height = newHeight + 'px';
+            }),
+        });
+
+        this.element.appendChild(this.magnifierResizeHandle);
 
         this.displayRegion           = $.makeNeutralElement( 'div' );
         this.displayRegion.id        = this.element.id + '-displayregion';
