@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+  >
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>OpenSeadragonMagnifier demo</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/openseadragon@5.0/build/openseadragon/openseadragon.min.js"></script>
+  <script src="../dist/openseadragonmagnifier.js"></script>
+</head>
+<body>
+<div id="openseadragon1" style="width: 1200px; height: 1000px;"></div>
+
+<script>
+const viewer = OpenSeadragon({
+    id: 'openseadragon1',
+    prefixUrl: '../images/',
+    tileSources: 'https://openseadragon.github.io/example-images/highsmith/highsmith.dzi',
+});
+
+const magnifier = viewer.magnifier({
+    // sizeRatio:              0.2, // size relative to parent viewer
+    // magnifierRotate:        true, // rotate with parent viewer (does not work yet)
+    // keyboardShortcut:       'm', // to toggle magnifier visibility
+    // ... supports all OpenSeadragon viewer options
+    // because it is essentially a mini viewer
+});
+</script>
+</body>
+</html>
