@@ -227,6 +227,8 @@
 
                 this.element.style.right = right + 'px';
                 this.element.style.bottom = bottom + 'px';
+
+                this.raiseEvent('magnifier-move', { originalEvent: event, right, bottom, });
             },
         });
 
@@ -295,6 +297,13 @@
             this.element,
             options.controlOptions
         );
+
+        // TODO this is a hack to handle the elements OSD creates that prevent some pointer events from working
+        //  correctly. Should be replaced with something more native to OSD.
+        requestAnimationFrame(() => {
+            this.element.parentNode.style.pointerEvents = 'none';
+            this.element.parentNode.parentNode.style.pointerEvents = 'none';
+        });
 
         this._resizeWithViewer = options.controlOptions.anchor !== $.ControlAnchor.ABSOLUTE &&
             options.controlOptions.anchor !== $.ControlAnchor.NONE;
