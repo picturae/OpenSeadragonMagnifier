@@ -15,16 +15,27 @@
     };
 
     /**
+     * @typedef MagnifierOptions
+     * @property {number} sizeRatio
+     * @property {number=} viewerWidth Initial viewer width
+     * @property {number=} viewerHeight Initial viewer height
+     * @property {number=} minPixelRatio
+     * @property {number=} defaultZoomLevel Initial zoom level for the viewer
+     * @property {number} [minZoomLevel=1]
+     * @property {string} [keyboardShortcut='m'] The default keyboard shortcut to toggle the mangnifier.
+     */
+
+    /**
      * @class Magnifier
      * @classdesc Allows to view part of the image magnified.
      * @memberof OpenSeadragon
-     * @param {Object} options
+     * @param {MagnifierOptions} options
      */
     $.Magnifier = function(options) {
-        var viewer = options.viewer,
-            self = this,
-            viewerSize,
-            magnifierSize;
+        const viewer = options.viewer;
+        const self = this;
+        let viewerSize;
+        let magnifierSize;
 
         //We may need to create a new element and id if they did not
         //provide the id for the existing element
@@ -157,7 +168,7 @@
         this.magnifierResizeHandle.style.maxHeight = '50px';
         this.magnifierResizeHandle.style.cursor    = 'nw-resize';
         this.magnifierResizeHandle.style.zIndex    = '4'; // we need to be on top of OpenSeadragon
-        this.magnifierResizeHandle.style.background = 'rgba(0, 0, 0, .1)';
+        // this.magnifierResizeHandle.style.background = 'rgba(0, 0, 0, .1)';
 
         new $.MouseTracker({
             element:     this.element,
@@ -195,7 +206,7 @@
         this.regionMoveHangle.style.maxWidth  = '50px';
         this.regionMoveHangle.style.maxHeight = '50px';
         this.regionMoveHangle.style.cursor    = 'move';
-        this.regionMoveHangle.style.background = 'rgba(0, 0, 0, .1)';
+        // this.regionMoveHangle.style.background = 'rgba(0, 0, 0, .1)';
         new $.MouseTracker({
             element:     this.regionMoveHangle,
             dragHandler: $.delegate(this, moveRegion),
@@ -212,7 +223,7 @@
         this.regionResizeHangle.style.maxWidth  = '50px';
         this.regionResizeHangle.style.maxHeight = '50px';
         this.regionResizeHangle.style.cursor    = 'se-resize';
-        this.regionResizeHangle.style.background = 'rgba(0, 0, 0, .1)';
+        // this.regionResizeHangle.style.background = 'rgba(0, 0, 0, .1)';
         new $.MouseTracker({
             element:     this.regionResizeHangle,
             dragHandler: $.delegate(this, resizeRegion),
