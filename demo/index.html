@@ -24,12 +24,24 @@ const viewer = OpenSeadragon({
 
 const magnifier = viewer.magnifier({
     regionMoveHandle: 'full',
-    // sizeRatio:              0.2, // size relative to parent viewer
-    // magnifierRotate:        true, // rotate with parent viewer (does not work yet)
-    // keyboardShortcut:       'm', // to toggle magnifier visibility
-    // ... supports all OpenSeadragon viewer options
-    // because it is essentially a mini viewer
+    showMagnifierControl: true,
 });
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === ' ') {
+        magnifier.startMagnifierMove();
+    }
+});
+
+document.addEventListener('keyup', (event) => {
+    if (event.key === ' ') {
+        magnifier.stopMagnifierMove();
+    }
+});
+
+// document.addEventListener('mousedown', (event) => {
+//
+// });
 </script>
 </body>
 </html>
