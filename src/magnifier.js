@@ -23,6 +23,8 @@
      * @property {number=} defaultZoomLevel Initial zoom level for the viewer
      * @property {number} [minZoomLevel=1]
      * @property {string} [keyboardShortcut='m'] The default keyboard shortcut to toggle the mangnifier.
+     * @property {'topLeft' | 'full'} [regionMoveHandle='topLeft'] Controls the size of the area that can be used to
+     * move the region around.
      */
 
     /**
@@ -201,10 +203,23 @@
         this.regionMoveHangle                 = $.makeNeutralElement( 'div' );
         this.regionMoveHangle.id              = this.element.id + '-displayregion-move';
         this.regionMoveHangle.className       = 'displayregion-move';
-        this.regionMoveHangle.style.width     = '10%';
-        this.regionMoveHangle.style.height    = '10%';
-        this.regionMoveHangle.style.maxWidth  = '50px';
-        this.regionMoveHangle.style.maxHeight = '50px';
+
+        switch (options.regionMoveHandle) {
+            case 'topLeft': {
+                this.regionMoveHangle.style.width     = '10%';
+                this.regionMoveHangle.style.height    = '10%';
+                this.regionMoveHangle.style.maxWidth  = '50px';
+                this.regionMoveHangle.style.maxHeight = '50px';
+                break;
+            }
+
+            case 'full': {
+                this.regionMoveHangle.style.width     = '100%';
+                this.regionMoveHangle.style.height    = '100%';
+                break;
+            }
+        }
+
         this.regionMoveHangle.style.cursor    = 'move';
         // this.regionMoveHangle.style.background = 'rgba(0, 0, 0, .1)';
         new $.MouseTracker({
