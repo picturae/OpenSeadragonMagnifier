@@ -15,6 +15,8 @@
 <body>
 <div id="openseadragon1" style="width: 1200px; height: 1000px;"></div>
 
+<button id="reset-position">Reset position</button>
+
 <script>
 const viewer = OpenSeadragon({
     id: 'openseadragon1',
@@ -43,8 +45,29 @@ document.addEventListener('keyup', (event) => {
 });
 
 magnifier.addHandler('magnifier-move', event => {
-    console.log(event);
+    sessionStorage.setItem('magnifier-offset', JSON.stringify(event.offset));
 });
+
+magnifier.addHandler('magnifier-resize', event => {
+    sessionStorage.setItem('magnifier-size', JSON.stringify(event.size));
+});
+
+document.getElementById('reset-position').addEventListener('click', (event) => {
+    magnifier.resetMagnifier();
+
+    // Blur to prevent the space bar from being captured as a click
+    event.target.blur?.();
+});
+
+const savedOffset = sessionStorage.getItem('magnifier-offset');
+if (savedOffset !== null) {
+    magnifier.loadMagnifierOffset(JSON.parse(savedOffset));
+}
+
+const savedSize = sessionStorage.getItem('magnifier-size');
+if (savedSize !== null) {
+    magnifier.loadMagnifierSize(JSON.parse(savedSize));
+}
 </script>
 </body>
 </html>
