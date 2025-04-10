@@ -15,16 +15,22 @@
     };
 
     /**
-     * @typedef MagnifierOptions
+     * @typedef MagnifierPublicOptions
      * @property {number} sizeRatio
+     * @property {string=} prefixUrl Prefix URL to use for control images.
      * @property {number=} viewerWidth Initial viewer width
      * @property {number=} viewerHeight Initial viewer height
      * @property {number=} minPixelRatio
      * @property {number=} defaultZoomLevel Initial zoom level for the viewer
      * @property {number} [minZoomLevel=1]
-     * @property {string} [keyboardShortcut='m'] The default keyboard shortcut to toggle the mangnifier.
+     * @property {string} [keyboardShortcut='m'] The default keyboard shortcut to toggle the magnifier.
      * @property {'topLeft' | 'full'} [regionMoveHandle='topLeft'] Controls the size of the area that can be used to
      * move the region around.
+     * @property {'BOTTOM_RIGHT' | 'BOTTOM_LEFT' | 'TOP_RIGHT' | 'TOP_LEFT' | 'ABSOLUTE'} position Position to place the magnifier.
+     * @property {number=} top Required when position is set to 'ABSOLUTE'
+     * @property {number=} left Required when position is set to 'ABSOLUTE'
+     * @property {number=} height Required when position is set to 'ABSOLUTE'
+     * @property {number=} width Required when position is set to 'ABSOLUTE'
      * @property {boolean} [showMagnifierControl=false] Whether to show a button for toggling the magnifier.
      * @property {string | HTMLElement} magnifierButton
      * @property {boolean} [autoResize=true] Whether to automatically resize the inner magnifier view.
@@ -36,10 +42,34 @@
      */
 
     /**
+     * @typedef MagnifierControlOptions
+     * @property {OpenSeadragon.ControlAnchor} [anchor=OpenSeadragon.ControlAnchor.NONE]
+     * @property {boolean} [attachToViewer=true]
+     * @property {boolean} [autoFade=true]
+     */
+
+    /**
+     * @typedef MagnifierPrivateOptions
+     * @property {string=} id ID of element to use for the magnifier.
+     * @property {OpenSeadragon.Viewer} viewer Target viewer.
+     * @property {MagnifierControlOptions=} controlOptions Magnifier control options.
+     */
+
+    /**
+     * @typedef MagnifierFields
+     * @property {HTMLElement} element
+     */
+
+    /**
+     * @typedef {MagnifierPublicOptions & MagnifierPrivateOptions & MagnifierFields & OpenSeadragon.Viewer} MagnifierInstance
+     */
+
+    /**
      * @class Magnifier
      * @classdesc Allows to view part of the image magnified.
      * @memberof OpenSeadragon
-     * @param {MagnifierOptions} options
+     * @param {MagnifierPublicOptions & MagnifierPrivateOptions} options
+     * @this MagnifierInstance
      */
     $.Magnifier = function (options) {
         const viewer = options.viewer;
@@ -171,28 +201,63 @@
         this.magnifierResizeHandle.id = this.element.id + '-magnifier-resize';
         this.magnifierResizeHandle.className = 'magnifier-resize';
         this.magnifierResizeHandle.style.position = 'absolute';
-        this.magnifierResizeHandle.style.top = '-1px';
-        this.magnifierResizeHandle.style.left = '-1px';
+
+        switch (options.controlOptions.anchor) {
+            case $.ControlAnchor.TOP_LEFT: {
+                this.magnifierResizeHandle.style.bottom = '-1px';
+                this.magnifierResizeHandle.style.right = '-1px';
+                this.magnifierResizeHandle.style.cursor = 'se-resize';
+                break;
+            }
+
+            case $.ControlAnchor.TOP_RIGHT: {
+                this.magnifierResizeHandle.style.bottom = '-1px';
+                this.magnifierResizeHandle.style.left = '-1px';
+                this.magnifierResizeHandle.style.cursor = 'sw-resize';
+                break;
+            }
+
+            case $.ControlAnchor.BOTTOM_LEFT: {
+                this.magnifierResizeHandle.style.top = '-1px';
+                this.magnifierResizeHandle.style.right = '-1px';
+                this.magnifierResizeHandle.style.cursor = 'ne-resize';
+                break;
+            }
+
+            case $.ControlAnchor.BOTTOM_RIGHT:
+            default: {
+                this.magnifierResizeHandle.style.top = '-1px';
+                this.magnifierResizeHandle.style.left = '-1px';
+                this.magnifierResizeHandle.style.cursor = 'nw-resize';
+                break;
+            }
+        }
+
         this.magnifierResizeHandle.style.width = '10%';
         this.magnifierResizeHandle.style.height = '10%';
         this.magnifierResizeHandle.style.maxWidth = '50px';
         this.magnifierResizeHandle.style.maxHeight = '50px';
-        this.magnifierResizeHandle.style.cursor = 'nw-resize';
         this.magnifierResizeHandle.style.zIndex = '5'; // we need to be on top of OpenSeadragon
 
         new $.MouseTracker({
             element: this.magnifierResizeHandle,
-            dragHandler: $.delegate(this, function (event) {
+            dragHandler: event => {
+                const targets = _getAnchorTargets(options.controlOptions.anchor);
+
                 const viewerSize = $.getElementSize(this.viewer.element);
-                let newWidth = parseInt(this.element.style.width, 10) - event.delta.x;
+                const deltaX = event.delta.x * targets.dxFactor;
+                const deltaY = event.delta.y * targets.dyFactor;
+
+                let newWidth = parseInt(this.element.style.width, 10) + deltaX;
                 newWidth = Math.min(newWidth, viewerSize.x * .75);
                 newWidth = Math.max(newWidth, parseInt(this.element.style.minWidth, 10));
                 this.element.style.width = newWidth + 'px';
-                let newHeight = parseInt(this.element.style.height, 10) - event.delta.y;
+
+                let newHeight = parseInt(this.element.style.height, 10) + deltaY;
                 newHeight = Math.min(newHeight, viewerSize.y * .75);
                 newHeight = Math.max(newHeight, parseInt(this.element.style.minHeight, 10));
                 this.element.style.height = newHeight + 'px';
-            }),
+            },
         });
 
         this.element.appendChild(this.magnifierResizeHandle);
@@ -212,23 +277,32 @@
         new $.MouseTracker({
             element: this.magnifierMoveHandle,
             dragHandler: (event) => {
-                let right = Number(this.element.style.right.replace('px', ''));
-                let bottom = Number(this.element.style.bottom.replace('px', ''));
+                const targets = _getAnchorTargets(this.controlOptions.anchor);
 
+                // Get the current target values
+                let horizontal = Number(this.element.style[targets.hOffset].replace('px', ''));
+                let vertical = Number(this.element.style[targets.vOffset].replace('px', ''));
+
+                // Get the related client rects
                 const clientRect = this.element.getBoundingClientRect();
                 const canvasRect = viewer.canvas.getBoundingClientRect();
 
-                const maxRight = canvasRect.width - clientRect.width;
-                const maxBottom = canvasRect.height - clientRect.height;
+                // Get the maximum translation for both directions
+                const maxHorizontal = canvasRect.width - clientRect.width;
+                const maxVertical = canvasRect.height - clientRect.height;
 
-                // Where is Math.clamp when you need it.
-                right = Math.min(Math.max(right - event.delta.x, 0), maxRight);
-                bottom = Math.min(Math.max(bottom - event.delta.y, 0), maxBottom);
+                // Get the correct delta value for given direction
+                const deltaX = event.delta.x * targets.dxFactor;
+                const deltaY = event.delta.y * targets.dyFactor;
 
-                this.element.style.right = right + 'px';
-                this.element.style.bottom = bottom + 'px';
+                // Clamp translation to min and max values (where is Math.clamp when you need it.)
+                horizontal = Math.min(Math.max(horizontal + deltaX, 0), maxHorizontal);
+                vertical = Math.min(Math.max(vertical + deltaY, 0), maxVertical);
 
-                this.raiseEvent('magnifier-move', { originalEvent: event, right, bottom, });
+                this.element.style[targets.hOffset] = horizontal + 'px';
+                this.element.style[targets.vOffset] = vertical + 'px';
+
+                this.raiseEvent('magnifier-move', { originalEvent: event, [targets.hOffset]: horizontal, [targets.vOffset]: vertical, });
             },
         });
 
@@ -537,8 +611,12 @@
             this.magnifierMoveHandle.style.display = 'none';
         },
 
-        // private
-        _getMatchingItem: function (theirItem) {
+        /**
+         * @param theirItem
+         * @returns {OpenSeadragon.TiledImage|null}
+         * @private
+         */
+        _getMatchingItem(theirItem) {
             const count = this.world.getItemCount();
             let item;
 
@@ -552,12 +630,17 @@
             return null;
         },
 
-        // private
-        _matchBounds: function (myItem, theirItem, immediately) {
+        /**
+         * @param myItem
+         * @param theirItem
+         * @param immediately
+         * @private
+         */
+        _matchBounds(myItem, theirItem, immediately) {
             const bounds = theirItem.getBounds();
             myItem.setPosition(bounds.getTopLeft(), immediately);
             myItem.setWidth(bounds.width, immediately);
-        }
+        },
     });
 
     /**
@@ -591,6 +674,22 @@
                 magnifier.viewport.fitBounds(magnifier.storedBounds, true);
             }
         });
+    }
+
+    function _getAnchorTargets(anchor) {
+        const isLeft = anchor === OpenSeadragon.ControlAnchor.TOP_LEFT
+            || anchor === OpenSeadragon.ControlAnchor.BOTTOM_LEFT;
+
+        const isTop = anchor === OpenSeadragon.ControlAnchor.TOP_LEFT
+            || anchor === OpenSeadragon.ControlAnchor.TOP_RIGHT;
+
+        return {
+            hOffset: isLeft ? "left" : "right",
+            vOffset: isTop? "top" : "bottom",
+
+            dxFactor: isLeft ? 1 : -1,
+            dyFactor: isTop ? 1 : -1,
+        };
     }
 
     function cloneTiledImage(magnifier, tiledImage) {
