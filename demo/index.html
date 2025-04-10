@@ -25,6 +25,9 @@ const viewer = OpenSeadragon({
 const magnifier = viewer.magnifier({
     regionMoveHandle: 'full',
     showMagnifierControl: true,
+    controlOptions: {
+        anchor: OpenSeadragon.ControlAnchor.BOTTOM_LEFT,
+    },
 });
 
 document.addEventListener('keydown', (event) => {
