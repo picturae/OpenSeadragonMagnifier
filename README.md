@@ -6,7 +6,8 @@ It could be useful for zooming into 2 separate parts of an image to compare them
 
 ## Demo
 
-http://picturae.github.io/openseadragonselection/#magnifier
+A basic demo/test page can be found in the `demo` directory. Make sure to run `npm run build` and serve the root of the
+project.
 
 ## Usage
 
