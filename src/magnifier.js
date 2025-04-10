@@ -302,7 +302,19 @@
                 this.element.style[targets.hOffset] = horizontal + 'px';
                 this.element.style[targets.vOffset] = vertical + 'px';
 
-                this.raiseEvent('magnifier-move', { originalEvent: event, [targets.hOffset]: horizontal, [targets.vOffset]: vertical, });
+                this.raiseEvent('magnifier-move', {
+                    originalEvent: event,
+
+                    // Just the info needed for setting back the location.
+                    offset: {
+                        anchor: this.controlOptions.anchor,
+                        [targets.hOffset]: horizontal,
+                        [targets.vOffset]: vertical,
+                    },
+
+                    [targets.hOffset]: horizontal,
+                    [targets.vOffset]: vertical,
+                });
             },
         });
 
@@ -609,6 +621,19 @@
          */
         stopMagnifierMove() {
             this.magnifierMoveHandle.style.display = 'none';
+        },
+
+        /**
+         * @param {OpenSeadragon.ControlAnchor} offset.anchor Saved anchor location.
+         * @param {number=} offset.left Left offset
+         * @param {number=} offset.right Right offset
+         * @param {number=} offset.top Top offset
+         * @param {number=} offset.bottom Bottom offset
+         */
+        loadMagnifierOffset(offset) {
+            const targets = _getAnchorTargets(this.controlOptions.anchor);
+            this.element.style[targets.hOffset] = offset[targets.hOffset] + 'px';
+            this.element.style[targets.vOffset] = offset[targets.vOffset] + 'px';
         },
 
         /**

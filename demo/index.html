@@ -43,8 +43,14 @@ document.addEventListener('keyup', (event) => {
 });
 
 magnifier.addHandler('magnifier-move', event => {
-    console.log(event);
+    sessionStorage.setItem('magnifier-offset', JSON.stringify(event.offset));
 });
+
+const savedOffset = sessionStorage.getItem('magnifier-offset');
+if (savedOffset !== null) {
+    console.log(savedOffset);
+    magnifier.loadMagnifierOffset(JSON.parse(savedOffset));
+}
 </script>
 </body>
 </html>
