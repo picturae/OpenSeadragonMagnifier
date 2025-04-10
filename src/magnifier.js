@@ -158,8 +158,8 @@
         this.viewerWidth = options.viewerWidth;
         this.viewerHeight = options.viewerHeight;
 
-        //At some browser magnification levels the display regions lines up correctly, but at some there appears to
-        //be a one pixel gap.
+        // At some browser magnification levels the display regions lines up correctly, but at some there appears to
+        // be a one pixel gap.
         this.fudge = new $.Point(1, 1);
         this.totalBorderWidths = new $.Point(this.borderWidth * 2, this.borderWidth * 2).minus(this.fudge);
 
@@ -186,15 +186,13 @@
         }
 
         if (options.controlOptions.anchor !== $.ControlAnchor.NONE) {
-            (function (style, borderWidth) {
-                style.margin = '0px';
-                style.border = borderWidth + 'px solid #555';
-                style.padding = '0px';
-                style.background = '#000';
-                style.overflow = 'hidden';
-                style.minWidth = '50px';
-                style.minHeight = '50px';
-            }(this.element.style, this.borderWidth));
+            this.element.style.margin = '0px';
+            this.element.style.border = this.borderWidth + 'px solid #555';
+            this.element.style.padding = '0px';
+            this.element.style.background = '#000';
+            this.element.style.overflow = 'hidden';
+            this.element.style.minWidth = '50px';
+            this.element.style.minHeight = '50px';
         }
 
         this.magnifierResizeHandle = $.makeNeutralElement('div');
@@ -257,6 +255,16 @@
                 newHeight = Math.min(newHeight, viewerSize.y * .75);
                 newHeight = Math.max(newHeight, parseInt(this.element.style.minHeight, 10));
                 this.element.style.height = newHeight + 'px';
+
+                this.raiseEvent('magnifier-resize', {
+                    originalEvent: event,
+                    size: {
+                        height: newHeight,
+                        width: newWidth,
+                    },
+                    height: newHeight,
+                    width: newWidth,
+                });
             },
         });
 
@@ -323,13 +331,10 @@
         this.displayRegion = $.makeNeutralElement('div');
         this.displayRegion.id = this.element.id + '-displayregion';
         this.displayRegion.className = 'displayregion';
-
-        (function (style, borderWidth) {
-            style.position = 'absolute';
-            style.border = borderWidth + 'px solid #900';
-            style.margin = '0px';
-            style.padding = '0px';
-        }(this.displayRegion.style, this.borderWidth));
+        this.displayRegion.style.position = 'absolute';
+        this.displayRegion.style.border = this.borderWidth + 'px solid #900';
+        this.displayRegion.style.margin = '0px';
+        this.displayRegion.style.padding = '0px';
 
         this.regionMoveHangle = $.makeNeutralElement('div');
         this.regionMoveHangle.id = this.element.id + '-displayregion-move';
@@ -541,7 +546,7 @@
                     newHeight = this.elementArea / newWidth;
                 }
 
-                // When dimensions are suplied with the plugin options
+                // When dimensions are supplied with the plugin options
                 if (this.viewerWidth && this.viewerHeight) {
                     newWidth = this.viewerWidth;
                     newHeight = this.viewerHeight;
@@ -624,16 +629,79 @@
         },
 
         /**
-         * @param {OpenSeadragon.ControlAnchor} offset.anchor Saved anchor location.
-         * @param {number=} offset.left Left offset
-         * @param {number=} offset.right Right offset
-         * @param {number=} offset.top Top offset
-         * @param {number=} offset.bottom Bottom offset
+         * Loads an offset based on the current anchor.
+         * @param {number=} offset.left Left offset used for TOP_LEFT and BOTTOM_LEFT anchors.
+         * @param {number=} offset.right Right offset used for TOP_RIGHT and BOTTOM_RIGHT anchors.
+         * @param {number=} offset.top Top offset used for TOP_LEFT and TOP_RIGHT anchors.
+         * @param {number=} offset.bottom Bottom offset used for BOTTOM_LEFT and BOTTOM_RIGHT anchors.
          */
         loadMagnifierOffset(offset) {
             const targets = _getAnchorTargets(this.controlOptions.anchor);
             this.element.style[targets.hOffset] = offset[targets.hOffset] + 'px';
             this.element.style[targets.vOffset] = offset[targets.vOffset] + 'px';
+        },
+
+        /**
+         * Resets the magnifier position back to its anchor.
+         */
+        resetMagnifierOffset() {
+            const targets = _getAnchorTargets(this.controlOptions.anchor);
+            this.element.style[targets.hOffset] = 0;
+            this.element.style[targets.vOffset] = 0;
+
+            this.raiseEvent('magnifier-move', {
+                originalEvent: null,
+
+                // Just the info needed for setting back the location.
+                offset: {
+                    anchor: this.controlOptions.anchor,
+                    [targets.hOffset]: 0,
+                    [targets.vOffset]: 0,
+                },
+
+                [targets.hOffset]: 0,
+                [targets.vOffset]: 0,
+            });
+        },
+
+        /**
+         * @param {number} size.width Width
+         * @param {number} size.height Height
+         */
+        loadMagnifierSize(size) {
+            this.element.style.height = size.height + 'px';
+            this.element.style.width = size.width + 'px';
+        },
+
+        /**
+         * Reset the magnifier size to its original values.
+         */
+        resetMagnifierSize() {
+            const viewerSize = $.getElementSize(this.viewer.element);
+
+            const width = viewerSize.x * this.sizeRatio;
+            const height = viewerSize.y * this.sizeRatio;
+
+            this.element.style.width = width + 'px';
+            this.element.style.height = height + 'px';
+
+            this.raiseEvent('magnifier-move', {
+                originalEvent: null,
+                size: {
+                    height,
+                    width,
+                },
+                height,
+                width,
+            });
+        },
+
+        /**
+         * Reset both the offset and size of the magnifier
+         */
+        resetMagnifier() {
+            this.resetMagnifierOffset();
+            this.resetMagnifierSize();
         },
 
         /**
